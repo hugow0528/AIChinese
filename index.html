@@ -374,6 +374,12 @@
    
 
      <div class="title-container">
+        <div style="position: fixed; top: 10px; right: 10px; z-index: 1000;">
+    <button id="exportPdfBtn" style="background: none; border: none; cursor: pointer;">
+        <img src="https://i.ibb.co/5sM8P5Q/pdf-icon.png" alt="Export to PDF" style="width: 24px; height: 24px;">
+    </button>
+</div>
+
     <h1>
         <span class="title-text">神思</span>
     </h1>
@@ -443,6 +449,42 @@
 
 <script src="https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js"></script>
 <script>
+// 導出 PDF 功能
+document.getElementById("exportPdfBtn").addEventListener("click", function() {
+    // 確保 AI 內容已生成完成
+    if (!document.querySelector(".ai-message") && !document.getElementById("commentResult").innerHTML) {
+        alert("請等待 AI 內容生成完成再導出！");
+        return;
+    }
+    
+    html2canvas(document.body, { scale: 1 }).then(function(canvas) {
+        const imgData = canvas.toDataURL('image/png');
+        const { jsPDF } = jspdf; // 從全局變量中獲取 jsPDF
+        const pdf = new jsPDF();
+        const imgProps = pdf.getImageProperties(imgData);
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
+        
+        // 如果內容過長，添加多頁支持
+        if (pdfHeight > pdf.internal.pageSize.getHeight()) {
+            let heightLeft = pdfHeight;
+            let position = 0;
+            while (heightLeft > 0) {
+                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
+                heightLeft -= pdf.internal.pageSize.getHeight();
+                position -= pdf.internal.pageSize.getHeight();
+                if (heightLeft > 0) pdf.addPage();
+            }
+        } else {
+            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        }
+        
+        pdf.save('神思輸出.pdf');
+    }).catch(function(error) {
+        console.error("導出 PDF 時出錯:", error);
+        alert("導出失敗，請重試！");
+    });
+});
     document.addEventListener('DOMContentLoaded', function() {
         const converter = OpenCC.Converter({ from: 'cn', to: 'tw' });
         const hitokotoElement = document.getElementById('hitokoto');
